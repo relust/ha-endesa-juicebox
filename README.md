@@ -139,7 +139,7 @@ The integration includes complete support for Victron Energy ESS systems:
 
 1. **Direct Modbus TCP Link:** Reads PV power, consumption, grid, and inverter overload alarms directly from the Cerbo GX (`192.168.0.135:502`) without creating extra entities in Home Assistant.
 2. **Virtual EV Charger on D-Bus:** Exposes the station natively in Victron Touch 50/70, GUI-v2, and VRM Portal via the `dbus-mqtt-ev-charger` service.
-3. **Step-by-step setup guide and sample configuration:** See the dedicated [`victron/`](victron/) folder in this repository for full instructions.
+3. **Enhanced Driver & 1-Command Installer:** Includes our bug-fixed, verified D-Bus driver that prevents slider crashes (`TypeError`), properly synchronizes session energy/time, and enables instant bi-directional MQTT control. See the dedicated [`victron/`](victron/) folder for setup instructions and the 1-command installer.
 
 ---
 
