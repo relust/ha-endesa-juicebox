@@ -1,0 +1,7 @@
+# Local cache
+__pycache__/
+*.pyc
+*.bak
+.venv/
+.vscode/
+Thumbs.db

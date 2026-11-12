@@ -1,0 +1,126 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Endesa X JuiceBox",
+        "description": "Enter the connection details for your Endesa X / Enel X JuiceBox EV charger.",
+        "data": {
+          "host": "Charger IP Address",
+          "password": "Web Manager Password (default 000000)",
+          "scan_interval": "Polling Interval (seconds)",
+          "auto_start_on_plugin": "Auto-Start charging on vehicle plug-in",
+          "enable_victron_mqtt": "Sync with Victron Cerbo GX via MQTT",
+          "victron_topic": "Victron MQTT Topic"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the charger. Check the IP address and password.",
+      "unknown": "Unexpected error while communicating with the charger."
+    },
+    "abort": {
+      "already_configured": "This charger is already configured in Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Endesa X JuiceBox Options",
+        "data": {
+          "scan_interval": "Polling Interval (seconds)",
+          "auto_start_on_plugin": "Auto-Start charging on vehicle plug-in",
+          "enable_victron_mqtt": "Sync with Victron Cerbo GX via MQTT",
+          "victron_topic": "Victron MQTT Topic"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power": {
+        "name": "Total Power"
+      },
+      "power_l1": {
+        "name": "Power L1"
+      },
+      "power_l2": {
+        "name": "Power L2"
+      },
+      "power_l3": {
+        "name": "Power L3"
+      },
+      "current_l1": {
+        "name": "Current L1"
+      },
+      "current_l2": {
+        "name": "Current L2"
+      },
+      "current_l3": {
+        "name": "Current L3"
+      },
+      "voltage_l1": {
+        "name": "Voltage L1"
+      },
+      "voltage_l2": {
+        "name": "Voltage L2"
+      },
+      "voltage_l3": {
+        "name": "Voltage L3"
+      },
+      "energy": {
+        "name": "Total Energy"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "disconnected": "Disconnected",
+          "waiting": "Connected (Standby)",
+          "charging": "Charging",
+          "unknown": "Unknown"
+        }
+      },
+      "cp_voltage": {
+        "name": "Control Pilot Voltage"
+      },
+      "session_energy": {
+        "name": "Session Energy"
+      },
+      "leaf_live_soc": {
+        "name": "Leaf Estimated Battery"
+      },
+      "leaf_live_range": {
+        "name": "Leaf Estimated Range"
+      },
+      "solar_surplus": {
+        "name": "Solar Surplus Power"
+      },
+      "solar_status": {
+        "name": "Solar Auto Status"
+      }
+    },
+    "binary_sensor": {
+      "vehicle_connected": {
+        "name": "Vehicle Connected"
+      }
+    },
+    "number": {
+      "charging_current": {
+        "name": "Charging Current Limit"
+      },
+      "solar_min_battery_soc": {
+        "name": "Solar Min House Battery SoC"
+      },
+      "solar_cloud_tolerance": {
+        "name": "Solar Cloud Tolerance"
+      }
+    },
+    "switch": {
+      "charging": {
+        "name": "Charging"
+      },
+      "auto_start_on_plugin": {
+        "name": "Auto-Start on Plug-in"
+      }
+    }
+  }
+}

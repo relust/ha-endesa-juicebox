@@ -1,0 +1,12 @@
+{
+  "domain": "endesa_juicebox",
+  "name": "Endesa X JuiceBox",
+  "codeowners": ["@relust"],
+  "config_flow": true,
+  "documentation": "https://github.com/relust/ha-endesa-juicebox",
+  "issue_tracker": "https://github.com/relust/ha-endesa-juicebox/issues",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "version": "1.0.0",
+  "after_dependencies": ["mqtt"]
+}

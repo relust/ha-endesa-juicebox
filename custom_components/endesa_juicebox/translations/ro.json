@@ -1,0 +1,126 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectare Endesa X JuiceBox",
+        "description": "Introdu datele stației de încărcare Endesa X / Enel X JuiceBox.",
+        "data": {
+          "host": "Adresă IP Stație",
+          "password": "Parolă Web Manager (implicit 000000)",
+          "scan_interval": "Interval Interogare (secunde)",
+          "auto_start_on_plugin": "Pornire automată la cuplarea cablului în mașină",
+          "enable_victron_mqtt": "Sincronizare MQTT cu Victron Cerbo GX",
+          "victron_topic": "Topic MQTT Victron"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Conexiunea la stație a eșuat. Verifică IP-ul și parola.",
+      "unknown": "Eroare neașteptată la comunicarea cu stația."
+    },
+    "abort": {
+      "already_configured": "Această stație este deja configurată în Home Assistant."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opțiuni Endesa X JuiceBox",
+        "data": {
+          "scan_interval": "Interval Interogare (secunde)",
+          "auto_start_on_plugin": "Pornire automată la cuplarea cablului în mașină",
+          "enable_victron_mqtt": "Sincronizare MQTT cu Victron Cerbo GX",
+          "victron_topic": "Topic MQTT Victron"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "power": {
+        "name": "Putere Totală"
+      },
+      "power_l1": {
+        "name": "Putere L1"
+      },
+      "power_l2": {
+        "name": "Putere L2"
+      },
+      "power_l3": {
+        "name": "Putere L3"
+      },
+      "current_l1": {
+        "name": "Curent L1"
+      },
+      "current_l2": {
+        "name": "Curent L2"
+      },
+      "current_l3": {
+        "name": "Curent L3"
+      },
+      "voltage_l1": {
+        "name": "Tensiune L1"
+      },
+      "voltage_l2": {
+        "name": "Tensiune L2"
+      },
+      "voltage_l3": {
+        "name": "Tensiune L3"
+      },
+      "energy": {
+        "name": "Total Energie"
+      },
+      "status": {
+        "name": "Stare",
+        "state": {
+          "disconnected": "Deconectat",
+          "waiting": "Conectat (Standby)",
+          "charging": "În curs de încărcare",
+          "unknown": "Necunoscut"
+        }
+      },
+      "cp_voltage": {
+        "name": "Tensiune Control Pilot"
+      },
+      "session_energy": {
+        "name": "Energie Sesiune"
+      },
+      "leaf_live_soc": {
+        "name": "Leaf Baterie Estimată"
+      },
+      "leaf_live_range": {
+        "name": "Leaf Autonomie Estimată"
+      },
+      "solar_surplus": {
+        "name": "Surplus Solar Disponibil"
+      },
+      "solar_status": {
+        "name": "Stare Încărcare Solară"
+      }
+    },
+    "binary_sensor": {
+      "vehicle_connected": {
+        "name": "Vehicul Conectat"
+      }
+    },
+    "number": {
+      "charging_current": {
+        "name": "Limită Curent"
+      },
+      "solar_min_battery_soc": {
+        "name": "Prag Minim Baterie Casă pt. Solar"
+      },
+      "solar_cloud_tolerance": {
+        "name": "Toleranță Nori (Timp de Grație)"
+      }
+    },
+    "switch": {
+      "charging": {
+        "name": "Activare Încărcare"
+      },
+      "auto_start_on_plugin": {
+        "name": "Auto-Start la Cuplare Cablu"
+      }
+    }
+  }
+}
