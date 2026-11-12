@@ -428,10 +428,10 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             direct_overload_alarm = None
             direct_grid_lost = None
 
-        # Putere importată din rețea (Grid Power > 0 = import)
+        # Grid power imported (Grid Power > 0 = import)
         grid_import_w = max(0.0, grid_raw_w)
 
-        # Sarcina reală suportată de invertor (AC Out minus aportul din rețea)
+        # Actual load on inverter (AC Out minus grid import)
         inverter_load_w = max(0.0, cons_power_w - grid_import_w)
 
         ev_power_w = data.get("power_w", 0.0)
@@ -449,7 +449,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             self._deficit_timer_start = None
             self._surplus_start_timer = None
             
-            # --- PROTECȚIE LA SUPRASARCINĂ INVERTOR ÎN MOD MANUAL ---
+            # --- INVERTER OVERLOAD PROTECTION IN MANUAL MODE ---
             # SE APLICĂ EXCLUSIV DACĂ:
             # 1. A picat rețeaua publică (Off-grid / Island mode) sau
             # 2. Invertorul MultiPlus raportează o alarmă reală de Overload (hardware pre-alarm)!
@@ -497,7 +497,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                 
                 if safe_ev_headroom_w < 1380.0:
                     _LOGGER.warning(
-                        "Off-Grid Overload Protection: Rețea căzută și consum casă (%.0fW) depășește limita invertorului. Pauză EV.",
+                        "Off-Grid Overload Protection: Grid lost and house consumption (%.0fW) exceeds inverter limit. Pausing EV.",
                         house_other_consumption,
                     )
                     try:
@@ -508,12 +508,12 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                         self._manual_overload_throttled = True
                     except Exception as err:
                         _LOGGER.error("Failed to pause EV on off-grid overload: %s", err)
-                    data["solar_status_text"] = f"Pauză Off-Grid: Casă {house_other_consumption:.0f}W > 4500W"
+                    data["solar_status_text"] = f"Off-Grid Pause: House load {house_other_consumption:.0f}W > 4500W"
                     victron_status_override = 4
                 else:
                     if abs(safe_amps - current_imax) >= 1.0 and (now - self._last_set_current_time >= 3.0):
                         _LOGGER.warning(
-                            "Off-Grid Overload Protection: Sarcină invertor %.0fW. Coborâre dinamică de la %.0fA la %.0fA.",
+                            "Off-Grid Overload Protection: Inverter load %.0fW. Dynamically throttling current from %.0fA to %.0fA.",
                             inverter_load_w, current_imax, safe_amps,
                         )
                         try:
@@ -523,16 +523,16 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                             self._manual_overload_throttled = True
                         except Exception as err:
                             _LOGGER.error("Failed to throttle EV on off-grid overload: %s", err)
-                    data["solar_status_text"] = f"Mod Manual: Limitat la {data.get('imax_a', safe_amps):.0f}A (Protecție Off-Grid)"
+                    data["solar_status_text"] = f"Manual Mode: Throttled to {data.get('imax_a', safe_amps):.0f}A (Off-Grid Protection)"
             
-            # Revenire automată la curentul setat de utilizator când condiția de off-grid/alarmă dispare
+            # Automatically restore user current when off-grid or overload condition clears
             elif self._manual_overload_throttled and current_connected:
                 if (not is_grid_lost and not is_overload_alarm) or inverter_load_w <= 3800.0:
                     if self._overload_restore_timer is None:
                         self._overload_restore_timer = now
                     elif now - self._overload_restore_timer >= 10.0:
                         _LOGGER.info(
-                            "Off-Grid Overload Protection: Condiții normale restabilite. Revenire la setarea utilizator %.0fA.",
+                            "Off-Grid Overload Protection: Normal conditions restored. Returning to user current %.0fA.",
                             self.user_max_current,
                         )
                         try:
@@ -548,29 +548,29 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                             self._overload_restore_timer = None
                         except Exception as err:
                             _LOGGER.error("Failed to restore user current: %s", err)
-                        data["solar_status_text"] = f"Mod Manual: Restabilit la {self.user_max_current:.0f}A"
+                        data["solar_status_text"] = f"Manual Mode: Restored to {self.user_max_current:.0f}A"
                     else:
                         rem_r = int(10.0 - (now - self._overload_restore_timer))
-                        data["solar_status_text"] = f"Revenire curent în {rem_r}s"
+                        data["solar_status_text"] = f"Restoring current in {rem_r}s"
                 else:
                     self._overload_restore_timer = None
-                    data["solar_status_text"] = f"Mod Manual: Menținut {data.get('imax_a', current_imax):.0f}A"
+                    data["solar_status_text"] = f"Manual Mode: Maintained {data.get('imax_a', current_imax):.0f}A"
             else:
                 self._manual_overload_throttled = False
                 self._overload_restore_timer = None
-                data["solar_status_text"] = f"Mod Manual: {self.user_max_current:.0f}A"
+                data["solar_status_text"] = f"Manual Mode: {self.user_max_current:.0f}A"
         elif not current_connected:
             self._cloud_timer_start = None
             self._deficit_timer_start = None
             self._surplus_start_timer = None
-            data["solar_status_text"] = "Mașină deconectată"
+            data["solar_status_text"] = "Vehicle Disconnected"
         elif home_bat_soc is not None and home_bat_soc < self.solar_min_battery_soc:
             self._cloud_timer_start = None
             self._deficit_timer_start = None
             self._surplus_start_timer = None
             if ev_charging:
                 _LOGGER.info(
-                    "Solar Auto Mode: Bateria casei (%.1f%%) < pragul de %.0f%%. Pauză încărcare EV pentru a prioritiza casa.",
+                    "Solar Auto Mode: Home battery (%.1f%%) < threshold of %.0f%%. Pausing EV charging to prioritize home.",
                     home_bat_soc, self.solar_min_battery_soc,
                 )
                 try:
@@ -580,7 +580,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                     data["charging"] = False
                 except Exception as err:
                     _LOGGER.error("Failed to pause EV charging: %s", err)
-            data["solar_status_text"] = f"Pauză: Baterie casă {home_bat_soc:.0f}% < {self.solar_min_battery_soc:.0f}% (prioritate casă)"
+            data["solar_status_text"] = f"Paused: Home battery {home_bat_soc:.0f}% < {self.solar_min_battery_soc:.0f}% (home priority)"
             victron_status_override = 4
         else:
             raw_amps = available_surplus_w / 230.0
@@ -596,11 +596,11 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                 if not ev_charging:
                     if self._surplus_start_timer is None:
                         self._surplus_start_timer = now
-                        data["solar_status_text"] = f"Surplus detectat ({available_surplus_w:.0f}W) - confirmare stabilitate..."
+                        data["solar_status_text"] = f"Surplus detected ({available_surplus_w:.0f}W) - verifying stability..."
                         victron_status_override = 4
                     elif now - self._surplus_start_timer >= 15.0:
                         _LOGGER.info(
-                            "Solar Auto Mode: Surplus stabil (%.0fW -> %.0fA) confirmat 15s. Pornire încărcare!",
+                            "Solar Auto Mode: Stable surplus (%.0fW -> %.0fA) confirmed for 15s. Starting charging!",
                             available_surplus_w, target_amps,
                         )
                         try:
@@ -612,19 +612,19 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                             data["imax_a"] = target_amps
                             self._last_set_current_time = now
                             self._surplus_start_timer = None
-                            data["solar_status_text"] = f"Încărcare solară: {target_amps:.0f}A ({available_surplus_w:.0f}W surplus)"
+                            data["solar_status_text"] = f"Solar charging: {target_amps:.0f}A ({available_surplus_w:.0f}W surplus)"
                             victron_status_override = 2
                         except Exception as err:
                             _LOGGER.error("Failed to start solar charging: %s", err)
                     else:
                         elapsed_st = int(now - self._surplus_start_timer)
-                        data["solar_status_text"] = f"Confirmare surplus: {available_surplus_w:.0f}W ({elapsed_st}/15s)"
+                        data["solar_status_text"] = f"Verifying surplus: {available_surplus_w:.0f}W ({elapsed_st}/15s)"
                         victron_status_override = 4
                 else:
                     self._surplus_start_timer = None
                     if abs(target_amps - current_imax) >= 1.0 and (now - self._last_set_current_time >= 10.0):
                         _LOGGER.info(
-                            "Solar Auto Mode: Ajustare dinamică curent de la %.0fA la %.0fA (Surplus: %.0fW)",
+                            "Solar Auto Mode: Dynamic current adjustment from %.0fA to %.0fA (Surplus: %.0fW)",
                             current_imax, target_amps, available_surplus_w,
                         )
                         try:
@@ -633,21 +633,21 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                             self._last_set_current_time = now
                         except Exception as err:
                             _LOGGER.error("Failed to set dynamic current: %s", err)
-                    data["solar_status_text"] = f"Încărcare solară activă: {data.get('imax_a', target_amps):.0f}A ({available_surplus_w:.0f}W surplus)"
+                    data["solar_status_text"] = f"Solar charging active: {data.get('imax_a', target_amps):.0f}A ({available_surplus_w:.0f}W surplus)"
                     victron_status_override = 2
             else:
                 if not ev_charging:
                     self._surplus_start_timer = None
                     self._deficit_timer_start = None
                     self._cloud_timer_start = None
-                    data["solar_status_text"] = f"Așteptare soare: surplus {available_surplus_w:.0f}W < 1380W (min 6A)"
+                    data["solar_status_text"] = f"Waiting for sun: surplus {available_surplus_w:.0f}W < 1380W (min 6A)"
                     victron_status_override = 4
                 else:
                     # EV este conectat și încarcă, dar surplusul a scăzut sub pragul minim fizic de 6A (1380W)
                     # Coborâm imediat curentul la 6A pentru a minimiza consumul
                     if current_imax > 6.0 and (now - self._last_set_current_time >= 5.0):
                         _LOGGER.info(
-                            "Solar Auto Mode: Surplus scăzut (%.0fW < 1380W). Coborâre la minim 6A.",
+                            "Solar Auto Mode: Low surplus (%.0fW < 1380W). Dropping current to minimum 6A.",
                             available_surplus_w,
                         )
                         try:
@@ -657,7 +657,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                         except Exception as err:
                             _LOGGER.error("Failed to drop current to 6A: %s", err)
 
-                    # CAZUL 1: Consum mare în casă (ex: mașină de spălat, cuptor, plită, boiler)
+                    # CASE 1: High household consumption (ex: mașină de spălat, cuptor, plită, boiler)
                     # Consumul casei (fără EV) depășește producția solară -> Deficit net!
                     if available_surplus_w <= 0.0:
                         self._cloud_timer_start = None
@@ -669,7 +669,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                         # oprim complet încărcarea mașinii pentru a proteja bateria casei de descărcare!
                         if elapsed_deficit >= 10.0:
                             _LOGGER.info(
-                                "Solar Auto Mode: Consum mare în casă (%.0fW > PV %.0fW) timp de %.0fs. Pauză încărcare EV pentru a proteja bateria casei.",
+                                "Solar Auto Mode: High house consumption (%.0fW > PV %.0fW) for %.0fs. Pausing EV charging to protect home battery.",
                                 house_other_consumption, pv_power_w, elapsed_deficit,
                             )
                             try:
@@ -680,14 +680,14 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                                 self._deficit_timer_start = None
                             except Exception as err:
                                 _LOGGER.error("Failed to pause EV charging on high house consumption: %s", err)
-                            data["solar_status_text"] = f"Pauză: Consum casă ({house_other_consumption:.0f}W) > PV ({pv_power_w:.0f}W) (protecție baterie)"
+                            data["solar_status_text"] = f"Paused: House load ({house_other_consumption:.0f}W) > PV ({pv_power_w:.0f}W) (battery guard)"
                             victron_status_override = 4
                         else:
                             rem_def = int(10.0 - elapsed_deficit)
-                            data["solar_status_text"] = f"Consum mare casă: oprire EV în {rem_def}s dacă persistă"
+                            data["solar_status_text"] = f"High house load: pausing EV in {rem_def}s if sustained"
                             victron_status_override = 2
 
-                    # CAZUL 2: Nor ușor/mediu (există surplus parțial între 100W și 1300W, dar sub 6A)
+                    # CASE 2: Passing clouds (partial surplus below 6A) (există surplus parțial între 100W și 1300W, dar sub 6A)
                     else:
                         self._deficit_timer_start = None
                         tolerance_sec = self.solar_cloud_tolerance_min * 60.0
@@ -708,11 +708,11 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                                 self._cloud_timer_start = None
                             except Exception as err:
                                 _LOGGER.error("Failed to pause EV charging on cloud timeout: %s", err)
-                            data["solar_status_text"] = "Pauză: Soare insuficient (nor prelungit)"
+                            data["solar_status_text"] = "Paused: Insufficient solar (cloud timeout)"
                             victron_status_override = 4
                         else:
                             rem_sec = int(tolerance_sec - elapsed_cloud)
-                            data["solar_status_text"] = f"Nor temporar: menținut 6A (grație încă {rem_sec}s)"
+                            data["solar_status_text"] = f"Passing clouds: held at 6A (grace {rem_sec}s remaining)"
                             victron_status_override = 2
 
         if self.options.get(CONF_ENABLE_VICTRON_MQTT, True) and "mqtt" in self.hass.config.components:

@@ -60,7 +60,7 @@ class JuiceBoxChargingSwitch(CoordinatorEntity[JuiceBoxDataUpdateCoordinator], S
         """Start charging (requires vehicle to be connected)."""
         data = self.coordinator.data or {}
         if not data.get("connected", False):
-            raise HomeAssistantError("Nu se poate porni încărcarea: nicio mașină electrică nu este conectată fizic la stație! (Cannot start charging: No EV connected)")
+            raise HomeAssistantError("Cannot start charging: No electric vehicle is physically connected to the station!")
 
         _LOGGER.info("Starting JuiceBox charging")
         success = await self.coordinator.api.set_charging(True)
