@@ -122,6 +122,9 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         self.user_max_current: float = float(
             self.options.get(CONF_USER_MAX_CURRENT, DEFAULT_USER_MAX_CURRENT)
         )
+        self.victron_max_current: float = float(
+            self.options.get("victron_max_current", 32.0)
+        )
 
         self._disconnected_cycles: int = 0
         self._is_physically_connected: bool | None = None
@@ -163,6 +166,9 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
     def set_user_max_current(self, val: float) -> None:
         self.user_max_current = val
+
+    def set_victron_max_current(self, val: float) -> None:
+        self.victron_max_current = max(6.0, min(32.0, float(val)))
 
     def _get_sensor_state(
         self,
@@ -379,6 +385,13 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         # --- SOLAR SURPLUS REGULATION (Active only in Auto Mode: victron_mode == 1) ---
         now = time.time()
 
+        max_cur_state = self.hass.states.get("number.juicebox_max_charging_current")
+        if max_cur_state and max_cur_state.state not in ("unknown", "unavailable"):
+            try:
+                self.victron_max_current = max(6.0, min(32.0, float(max_cur_state.state)))
+            except ValueError:
+                pass
+
         # 1. PRIMARY: Direct native Modbus TCP from Cerbo GX (100% independent of other HA integrations)
         victron_direct = await async_fetch_victron_direct()
 
@@ -584,10 +597,14 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             victron_status_override = 4
         else:
             raw_amps = available_surplus_w / 230.0
-            # Plafonare suplimentară: în Auto mode, niciodată peste capacitatea sigură a invertorului
+            # Plafonare siguranță invertor: în Auto mode, nu depăși niciodată capacitatea sigură a invertorului
             safe_auto_headroom_w = max(0.0, 4200.0 - (house_other_consumption - grid_import_w))
             max_inverter_allowed_amps = max(6.0, float(int(safe_auto_headroom_w / 230.0)))
-            target_amps = min(self.user_max_current, max_inverter_allowed_amps, max(6.0, float(int(raw_amps))))
+
+            # Limita superioară pe Auto: plafonată de Victron MaxCurrent și de limita invertorului,
+            # decuplată complet de curentul manual setat pentru teste!
+            max_auto_amps = min(self.victron_max_current, max_inverter_allowed_amps)
+            target_amps = min(max_auto_amps, max(6.0, float(int(raw_amps))))
 
             if raw_amps >= 6.0:
                 self._cloud_timer_start = None
@@ -744,7 +761,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         else:
             custom_name = "JuiceBox (Nissan Leaf)"
 
-        display_set_current = self.user_max_current if self.victron_mode == 1 else data.get("imax_a", 16.0)
+        display_set_current = data.get("imax_a", self.user_max_current) if self.victron_mode == 1 else self.user_max_current
 
         payload = {
             "Status": victron_status,
@@ -769,7 +786,7 @@ class JuiceBoxDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             },
             "Current": data.get("current_l1_a", 0.0),
             "SetCurrent": display_set_current,
-            "MaxCurrent": 32.0,
+            "MaxCurrent": self.victron_max_current,
             "StartStop": start_stop,
             "Mode": self.victron_mode,
             "AutoStart": 1 if self.auto_start_on_plugin else 0,

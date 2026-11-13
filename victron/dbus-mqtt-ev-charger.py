@@ -469,7 +469,7 @@ class DbusMqttEvChargerService:
         global ev_charger_dict, mqtt_client, config
         logging.info("D-Bus setpoint changed: %s = %s" % (path, value))
         typed_val = value
-        if path == "/SetCurrent":
+        if path in ("/SetCurrent", "/MaxCurrent"):
             try:
                 typed_val = float(value)
             except (ValueError, TypeError):

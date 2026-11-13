@@ -121,12 +121,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             except ValueError:
                 pass
 
+        async def _handle_victron_max_current(msg):
+            try:
+                val = float(msg.payload)
+                _LOGGER.info("Victron Cerbo GX requested MaxCurrent: %.1f A", val)
+                coordinator.set_victron_max_current(val)
+                new_opts = dict(entry.options)
+                new_opts["victron_max_current"] = val
+                hass.config_entries.async_update_entry(entry, options=new_opts)
+                await coordinator.async_request_refresh()
+            except ValueError:
+                pass
+
         try:
             unsub1 = await mqtt.async_subscribe(hass, f"{topic_base}/set/SetCurrent", _handle_victron_set_current)
             unsub2 = await mqtt.async_subscribe(hass, f"{topic_base}/set/StartStop", _handle_victron_start_stop)
             unsub3 = await mqtt.async_subscribe(hass, f"{topic_base}/set/Mode", _handle_victron_mode)
             unsub4 = await mqtt.async_subscribe(hass, f"{topic_base}/set/AutoStart", _handle_victron_autostart)
-            hass.data[DOMAIN][entry.entry_id]["unsubs"].extend([unsub1, unsub2, unsub3, unsub4])
+            unsub5 = await mqtt.async_subscribe(hass, f"{topic_base}/set/MaxCurrent", _handle_victron_max_current)
+            hass.data[DOMAIN][entry.entry_id]["unsubs"].extend([unsub1, unsub2, unsub3, unsub4, unsub5])
             _LOGGER.info("Subscribed to Victron MQTT commands on %s/set/#", topic_base)
         except Exception as err:
             _LOGGER.warning("Could not subscribe to Victron MQTT topics: %s", err)
